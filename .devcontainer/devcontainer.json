@@ -1,0 +1,13 @@
+{
+  "name": "ROS 2 Jazzy Desktop (noVNC)",
+  "image": "tiryoh/ros2-desktop-vnc:jazzy",
+  "runArgs": ["--shm-size=512m", "--security-opt", "seccomp=unconfined"],
+  "forwardPorts": [80],
+  "portsAttributes": {
+    "80": {
+      "label": "ROS 2 Desktop (noVNC)",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "remoteUser": "ubuntu"
+}
