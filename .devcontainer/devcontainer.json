@@ -1,13 +1,13 @@
 {
-  "name": "ROS 2 Jazzy Desktop (noVNC)",
-  "image": "tiryoh/ros2-desktop-vnc:jazzy",
-  "runArgs": ["--shm-size=512m", "--security-opt", "seccomp=unconfined"],
-  "forwardPorts": [80],
-  "portsAttributes": {
-    "80": {
-      "label": "ROS 2 Desktop (noVNC)",
-      "onAutoForward": "openPreview"
+  "name": "ROS 2 Jazzy",
+  "image": "ros:jazzy-ros-base",
+  "remoteUser": "root",
+  "postCreateCommand": "apt-get update && apt-get install -y python3-colcon-common-extensions ros-jazzy-demo-nodes-py && rm -rf /var/lib/apt/lists/* && echo 'source /opt/ros/jazzy/setup.bash' >> /root/.bashrc",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python"
+      ]
     }
-  },
-  "remoteUser": "ubuntu"
+  }
 }

@@ -1,0 +1,16 @@
+# ROS 2 / colcon build artifacts
+build/
+install/
+log/
+
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Rosbag recordings (can get large; keep them out of git)
+rosbag2_*/
+
+# Editor / IDE settings
+.vscode/
