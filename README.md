@@ -3,17 +3,17 @@
 A software-only simulated rover written in Python with ROS 2 Jazzy. A simulated
 rover drives forward, "sees" an obstacle with a simulated range sensor, and
 turns to avoid it. It also stops itself if the sensor stops sending data. The
-whole thing runs in the terminal — no graphics needed.
+whole thing runs in the terminal, no graphics needed.
 
 I built this while teaching myself ROS 2 and Python so I could apply to
 McMaster's technical robotics teams. I already had some hands-on Arduino
 robotics experience (an obstacle-avoiding robot, a line follower, and a small
 recycling-conveyor prototype), and I wanted to take the same idea I used
-there — sense, decide, act — and rebuild it properly in ROS 2.
+there (sense, decide, act) and rebuild it properly in ROS 2.
 
 ## Demo
 
-_(Demo video / GIF goes here — see the terminal recording in the repo.)_
+_(Demo video / GIF goes here. See the terminal recording in the repo.)_
 
 ## What it does
 
@@ -52,21 +52,21 @@ flowchart LR
 
 The loop reads clockwise: the rover publishes where it is, the sensor turns that
 into an obstacle distance, the controller turns the distance into a movement
-command, and the rover moves — which changes the next sensor reading.
+command, and the rover moves, which changes the next sensor reading.
 
 ## Nodes
 
-- **rover_sim_node** (`rover_sim`) — the simulated rover. Starts at the origin,
+- **rover_sim_node** (`rover_sim`) is the simulated rover. It starts at the origin,
   listens for velocity commands, updates its x, y, and heading 10 times per
   second, and publishes odometry.
-- **range_sensor_node** (`range_sensor`) — a simulated front-facing sensor. It
+- **range_sensor_node** (`range_sensor`) is a simulated front-facing sensor. It
   knows where one obstacle is (fixed at x = 4.0, y = 0.0), works out the
   distance and whether the obstacle is within the sensor's field of view, and
   publishes a range reading 5 times per second.
-- **controller_node** (`controller`) — the "brain". It stores the newest sensor
+- **controller_node** (`controller`) is the "brain". It stores the newest sensor
   reading and, on its own fixed-rate timer, decides whether to drive or turn and
   publishes a velocity command.
-- **monitor_node** (`monitor`) — a read-only observer. It subscribes to all
+- **monitor_node** (`monitor`) is a read-only observer. It subscribes to all
   three topics and prints one tidy status block per second.
 
 ## Topics and message types
@@ -115,7 +115,7 @@ newest range reading and picks one of these:
 This was the part I cared about most. Instead of deciding *only* when a sensor
 message arrives, the controller decides on its own clock and checks how old the
 newest reading is. If no new reading has arrived for `sensor_timeout` (0.75 s),
-it publishes a zero velocity command — `SENSOR TIMEOUT - STOP`.
+it publishes a zero velocity command and logs `SENSOR TIMEOUT - STOP`.
 
 Why this matters: if the sensor node crashed and the controller only reacted to
 incoming messages, the rover would keep obeying its last command forever and
@@ -182,7 +182,7 @@ Rosbag recordings are ignored by git (they can get large).
 
 The decision logic and motion math live in a pure Python module,
 `rover_logic.py`, with no ROS imports. The nodes call that module, and the unit
-tests test it directly — so the tests cover the real logic the robot runs, and
+tests test it directly, so the tests cover the real logic the robot runs, and
 they run fast without starting ROS.
 
 ```bash
@@ -204,7 +204,7 @@ A few real problems I hit and worked through:
   and just worked.
 - **A graphical container that wouldn't graphics.** Before the terminal image, I
   tried a VNC desktop image; the noVNC web view kept crashing and returning 401.
-  Rather than sink time into it, I dropped the GUI — the project doesn't need one.
+  Rather than sink time into it, I dropped the GUI, since the project doesn't need one.
 - **A file where I wanted a folder.** I accidentally created a *file* named
   `launch` instead of a folder, which broke the launch file path. I renamed it
   out of the way, made the real folder, and later cleaned up the leftover.
@@ -213,7 +213,7 @@ A few real problems I hit and worked through:
   actual error instead of guessing.
 - **Editor warnings vs. real errors.** VS Code underlined `import rclpy` in
   yellow because its analyzer didn't know the ROS path. The build and the nodes
-  ran fine — I learned to tell an editor's yellow warning apart from a real red
+  ran fine, and I learned to tell an editor's yellow warning apart from a real red
   build error.
 
 ## Current limitations
@@ -222,10 +222,10 @@ I kept the scope small on purpose for a first ROS 2 project, so it's honest to
 list what it does *not* do:
 
 - One point obstacle, no real collision shape.
-- Perfect odometry — no drift, no sensor noise, no covariance model.
+- Perfect odometry, with no drift, sensor noise, or covariance model.
 - Instant velocity changes (no acceleration or wheel dynamics).
 - 2D planar motion only.
-- Simple threshold control — no path planning, mapping, or localization.
+- Simple threshold control, with no path planning, mapping, or localization.
 
 These are intentional simplifications, not bugs.
 

@@ -1,4 +1,4 @@
-# Development Log — ROS 2 Autonomous Rover Controller
+# Development Log: ROS 2 Autonomous Rover Controller
 
 This is an honest record of how I built this project, including the things that
 went wrong and how I worked them out. I kept it because the problems taught me
@@ -18,14 +18,14 @@ what I took away.
   environment, not my project, and that I was burning time I could spend
   actually learning ROS.
 - **What I changed:** I moved development into a browser-based GitHub Codespace,
-  which runs Linux in the cloud — no local install, no BIOS or Windows changes.
+  which runs Linux in the cloud, with no local install and no BIOS or Windows changes.
 - **What I learned:** Sometimes the right move is to change the environment
   instead of fighting it.
 
 ## The graphical container that wouldn't show graphics
 
 - **Problem:** My first Codespace image was a ROS desktop with a web (noVNC)
-  view, but the desktop never loaded — the browser URL returned HTTP 401 and
+  view, but the desktop never loaded. The browser URL returned HTTP 401 and
   nothing was listening on port 80.
 - **Cause:** The noVNC process kept crashing under its supervisor even though
   ROS itself was fine.
@@ -43,7 +43,7 @@ what I took away.
   `ros2 pkg create --build-type ament_python --license Apache-2.0 rover_controller`
   and the message dependencies (`rclpy`, `geometry_msgs`, `sensor_msgs`,
   `nav_msgs`), then built it with `colcon build --symlink-install`.
-- **What I learned:** the workspace layout — `src` holds my code, `build`/
+- **What I learned:** the workspace layout, where `src` holds my code, `build`/
   `install`/`log` are generated, and `source install/setup.bash` is what makes a
   terminal aware of my package.
 
@@ -54,7 +54,7 @@ what I took away.
 - **Cause:** I had a missing closing parenthesis.
 - **How I diagnosed it:** I read the actual error and line instead of guessing,
   and replaced the broken `setup.py` with a complete, valid version.
-- **What I learned:** Read the real error message — it usually points close to
+- **What I learned:** Read the real error message, since it usually points close to
   the problem.
 
 ## A file where I wanted a folder
@@ -66,7 +66,7 @@ what I took away.
 - **What I changed:** I renamed the stray file out of the way, made the real
   `launch/` folder, created the launch file inside it, and later deleted the
   leftover empty file after confirming it held nothing.
-- **What I learned:** `mkdir` makes folders, `touch` makes files — and always
+- **What I learned:** `mkdir` makes folders, `touch` makes files, and always
   check what something is before deleting it.
 
 ## From fake readings to a real feedback loop
@@ -135,10 +135,10 @@ what I took away.
 
 - I recorded `/odom`, `/front_range`, and `/cmd_vel` with `ros2 bag record`,
   inspected the capture with `ros2 bag info`, and replayed it into just the
-  monitor with `ros2 bag play` — the dashboard came back to life from the
+  monitor with `ros2 bag play`, and the dashboard came back to life from the
   recording alone.
 - I added the bag folders to `.gitignore` so recordings never get committed.
-- **What I learned:** why teams record and replay sensor data — you can debug
+- **What I learned:** why teams record and replay sensor data. You can debug
   and test against the exact same run over and over.
 
 ## Pulling out the logic so I could test it
@@ -147,7 +147,7 @@ what I took away.
   which are hard to unit-test.
 - **What I changed:** I moved that logic into a pure module, `rover_logic.py`,
   with no ROS imports, and had the nodes call it. Then I wrote nine `pytest`
-  tests against it — clear path drives forward, exact threshold turns, obstacle
+  tests against it: clear path drives forward, exact threshold turns, obstacle
   turns, no data stops, stale data stops, angle wrapping, and the motion update
   for straight and turning motion.
 - **What I learned:** separating pure logic from framework code makes it fast and
