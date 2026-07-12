@@ -161,3 +161,18 @@ what I took away.
   prototype. I deliberately did not fake a series of older commits.
 - **What I learned:** what belongs in version control and what doesn't, and why
   an honest history matters.
+
+## Adding a live browser view
+
+- **Problem:** the terminal output is not much of a demo. I wanted to actually
+  see the rover drive and dodge obstacles.
+- **What I built:** a `sim_server_node` that generates an endless obstacle field
+  and publishes the nearest-obstacle distance as the same `/front_range` message
+  my controller already used, plus a tiny standard-library web server that a
+  browser polls to draw the world with the camera following the rover.
+- **Keeping it honest:** the browser makes no decisions. My real controller node
+  still decides drive, turn, or stop over real ROS topics, and the page's buttons
+  just set real ROS parameters. I also added a small stuck-recovery move to the
+  controller so it never gets trapped in the endless field.
+- **What I learned:** how to bridge ROS 2 to a browser with almost no extra
+  tooling, and where to draw the line between the real robot logic and a display.
