@@ -21,6 +21,10 @@ setup(
             os.path.join('share', package_name, 'launch'),
             glob('launch/*.launch.py'),
         ),
+        (
+            os.path.join('share', package_name, 'web'),
+            glob('web/*'),
+        ),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -38,6 +42,7 @@ setup(
             'controller = rover_controller.controller_node:main',
             'rover_sim = rover_controller.rover_sim_node:main',
             'monitor = rover_controller.monitor_node:main',
+            'sim_server = rover_controller.sim_server_node:main',
         ],
     },
 )
