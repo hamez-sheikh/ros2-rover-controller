@@ -13,7 +13,51 @@ there (sense, decide, act) and rebuild it properly in ROS 2.
 
 ## Demo
 
-_(Demo video / GIF goes here. See the terminal recording in the repo.)_
+The clip below is the live browser simulation: the rover drives through an
+endless, procedurally generated obstacle field, steering around obstacles on its
+own while the camera follows it. Every decision is made by the ROS 2 controller
+node; the browser only draws the world and sends the button presses.
+
+<!-- To embed the video: open this README on github.com, click the pencil to
+     edit, delete this comment line, and drag your screen recording onto this
+     spot. GitHub uploads it and turns it into an inline video player. -->
+
+## Live browser simulation
+
+Watching four nodes print numbers in a terminal is not the friendliest demo, so
+I added a live 2D view that opens in a browser. It runs on top of the exact same
+ROS 2 system, so my controller node still makes every decision.
+
+How it fits together:
+
+- A new `sim_server_node` builds an endless obstacle field around the rover
+  (generated on the fly and dropped once it is far behind, so memory stays
+  bounded), works out the distance to the nearest obstacle in front, and
+  publishes it as the same `/front_range` message the controller already uses.
+- The real `controller_node` reads that and decides drive, turn, or stop exactly
+  as before, plus a small recovery move if it ever gets stuck turning in place.
+- The real `rover_sim_node` turns those commands into motion and publishes
+  `/odom`.
+- `sim_server_node` also runs a tiny web server built only from the Python
+  standard library. The browser polls it for the rover pose and obstacles and
+  draws them, with the camera following the rover so the world scrolls by. The
+  page's buttons (pause, restart, shuffle, speed, density) send simple requests
+  back that set real ROS 2 parameters on the controller.
+
+Honest split: the ROS 2 nodes are the robot (all decisions and motion, over real
+topics); the browser is only a screen and a few buttons.
+
+Run it:
+
+```bash
+colcon build --symlink-install
+source install/setup.bash
+ros2 launch rover_controller visual_sim.launch.py
+```
+
+Then open the forwarded port 8080 from the Codespaces "Ports" tab. The rover
+drives and dodges obstacles for as long as you leave it running; press Ctrl+C to
+stop.
 
 ## What it does
 
