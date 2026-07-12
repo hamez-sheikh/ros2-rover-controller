@@ -17,9 +17,17 @@ class ControllerNode(Node):
         self.declare_parameter('turn_speed', 0.8)
         self.declare_parameter('control_rate', 10.0)
         self.declare_parameter('sensor_timeout', 0.75)
+        # If the rover turns in place for longer than recovery_time seconds it
+        # is probably stuck, so back up for recovery_duration seconds to escape.
+        self.declare_parameter('recovery_time', 4.0)
+        self.declare_parameter('recovery_duration', 1.2)
         # Latest sensor information.
         self.latest_range = None
         self.last_sensor_time = None
+        # Recovery state.
+        self.turn_start = None
+        self.recovering = False
+        self.recovery_start = None
         self.command_publisher = self.create_publisher(
             Twist,
             '/cmd_vel',
@@ -54,6 +62,8 @@ class ControllerNode(Node):
         forward_speed = self.get_parameter('forward_speed').value
         turn_speed = self.get_parameter('turn_speed').value
         sensor_timeout = self.get_parameter('sensor_timeout').value
+        recovery_time = self.get_parameter('recovery_time').value
+        recovery_duration = self.get_parameter('recovery_duration').value
 
         # How many seconds since the last reading? None means none yet.
         if self.last_sensor_time is None:
@@ -63,7 +73,7 @@ class ControllerNode(Node):
                 self.get_clock().now() - self.last_sensor_time
             ).nanoseconds / 1_000_000_000
 
-        # The decision is made by the pure, unit-tested logic function.
+        # The core decision is made by the pure, unit-tested logic function.
         linear, angular, decision = decide(
             self.latest_range,
             sensor_age,
@@ -72,6 +82,26 @@ class ControllerNode(Node):
             forward_speed,
             turn_speed,
         )
+
+        # Stuck-recovery layer sits on top of the normal decision.
+        now = self.get_clock().now()
+        if self.recovering:
+            elapsed = (now - self.recovery_start).nanoseconds / 1_000_000_000
+            if elapsed < recovery_duration:
+                linear, angular, decision = -forward_speed, 0.0, 'RECOVERY - BACK UP'
+            else:
+                self.recovering = False
+                self.turn_start = None
+        if not self.recovering:
+            if decision == 'TURN LEFT':
+                if self.turn_start is None:
+                    self.turn_start = now
+                elif (now - self.turn_start).nanoseconds / 1_000_000_000 > recovery_time:
+                    self.recovering = True
+                    self.recovery_start = now
+                    linear, angular, decision = -forward_speed, 0.0, 'RECOVERY - BACK UP'
+            else:
+                self.turn_start = None
 
         command = Twist()
         command.linear.x = linear
@@ -102,6 +132,8 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
+        # Best effort: send one last stop command, but do not crash if ROS
+        # is already shutting down and the connection is already gone.
         try:
             node.command_publisher.publish(Twist())
         except Exception:
