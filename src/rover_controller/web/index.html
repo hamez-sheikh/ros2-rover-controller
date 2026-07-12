@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ROS 2 Rover - live simulation</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    background: #eef1f4;
+    color: #23272e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 12px 28px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 2px; }
+  p.sub { margin: 0 0 14px; color: #5b6470; font-size: 13px; text-align: center; }
+  .card {
+    background: #fff;
+    border: 1px solid #dce1e7;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    max-width: 100%;
+  }
+  canvas { display: block; width: 100%; height: auto; border-radius: 8px; background: #f6f8fa; }
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  button {
+    font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 8px;
+    border: 1px solid #c4ccd5; background: #fff; color: #23272e; cursor: pointer;
+  }
+  button:hover { background: #f1f4f7; }
+  .slider { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #5b6470; }
+  .slider input { width: 120px; }
+  .state { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; margin-left: auto; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: #8b95a1; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: #5b6470; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+  <h1>ROS 2 Rover - live simulation</h1>
+  <p class="sub">The rover's decisions come from the ROS 2 controller node. This page only displays the world and sends controls.</p>
+  <div class="card">
+    <canvas id="view" width="1000" height="620"></canvas>
+    <div class="controls">
+      <button id="playBtn" type="button">Pause</button>
+      <button id="restartBtn" type="button">Restart</button>
+      <button id="shuffleBtn" type="button">Shuffle map</button>
+      <span class="slider">Speed<input id="speed" type="range" min="0" max="1.2" step="0.1" value="0.5" /><span id="speedOut">0.5</span></span>
+      <span class="slider">Density<input id="density" type="range" min="0.1" max="0.7" step="0.05" value="0.35" /><span id="densityOut">0.35</span></span>
+      <span class="state"><span class="dot" id="dot"></span><span id="label">connecting...</span></span>
+    </div>
+    <div class="legend">
+      <span><span class="swatch" style="background:#2f6fb0"></span>rover + heading</span>
+      <span><span class="swatch" style="background:#dd8b82"></span>obstacle</span>
+      <span><span class="swatch" style="background:#6fbf9b"></span>sensor cone (clear)</span>
+      <span><span class="swatch" style="background:#e6a95c"></span>sensor cone (avoiding)</span>
+    </div>
+  </div>
+
+<script>
+(function () {
+  var canvas = document.getElementById('view');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height, PPM = 46;
+
+  var target = { x: 0, y: 0, heading: 0 };
+  var cam = { x: 0, y: 0, heading: 0 };
+  var obstacles = [];
+  var fov = 0.9, sensorRange = 3.0, sensorDist = 6.0, behaviour = 'waiting', paused = false;
+  var trail = [];
+  var haveState = false;
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function lerpAngle(a, b, t) {
+    var d = b - a;
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    return a + d * t;
+  }
+  function toScreen(wx, wy) {
+    return [W / 2 + (wx - cam.x) * PPM, H / 2 - (wy - cam.y) * PPM];
+  }
+
+  function poll() {
+    fetch('/state', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (s) {
+      target = s.rover;
+      obstacles = s.obstacles || [];
+      fov = s.fov; sensorRange = s.range; sensorDist = s.sensor;
+      behaviour = s.behaviour; paused = s.paused;
+      if (!haveState) { cam = { x: target.x, y: target.y, heading: target.heading }; haveState = true; }
+      var last = trail[trail.length - 1];
+      if (!last || Math.hypot(target.x - last[0], target.y - last[1]) > 0.05) {
+        trail.push([target.x, target.y]);
+        if (trail.length > 500) trail.shift();
+      }
+    }).catch(function () {}).then(function () { setTimeout(poll, 60); });
+  }
+
+  function drawGrid() {
+    var halfW = (W / 2) / PPM, halfH = (H / 2) / PPM;
+    ctx.strokeStyle = '#e4e8ec';
+    ctx.lineWidth = 1;
+    var x0 = Math.floor(cam.x - halfW), x1 = Math.ceil(cam.x + halfW);
+    for (var x = x0; x <= x1; x++) {
+      var sx = toScreen(x, 0)[0];
+      ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, H); ctx.stroke();
+    }
+    var y0 = Math.floor(cam.y - halfH), y1 = Math.ceil(cam.y + halfH);
+    for (var y = y0; y <= y1; y++) {
+      var sy = toScreen(0, y)[1];
+      ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(W, sy); ctx.stroke();
+    }
+  }
+
+  function drawCone() {
+    var r = Math.min(sensorDist, sensorRange);
+    var h = cam.heading, half = fov / 2;
+    var c = toScreen(cam.x, cam.y);
+    ctx.beginPath();
+    ctx.moveTo(c[0], c[1]);
+    var steps = 14;
+    for (var i = 0; i <= steps; i++) {
+      var a = h - half + (2 * half) * i / steps;
+      var p = toScreen(cam.x + Math.cos(a) * r, cam.y + Math.sin(a) * r);
+      ctx.lineTo(p[0], p[1]);
+    }
+    ctx.closePath();
+    ctx.fillStyle = (behaviour === 'driving') ? 'rgba(111,191,155,0.22)' : 'rgba(230,169,92,0.28)';
+    ctx.fill();
+  }
+
+  function drawObstacles() {
+    for (var i = 0; i < obstacles.length; i++) {
+      var o = obstacles[i];
+      var s = toScreen(o[0], o[1]);
+      ctx.beginPath(); ctx.arc(s[0], s[1], o[2] * PPM, 0, Math.PI * 2);
+      ctx.fillStyle = '#dd8b82'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = '#b5564b'; ctx.stroke();
+    }
+  }
+
+  function drawTrail() {
+    if (trail.length < 2) return;
+    ctx.beginPath();
+    for (var i = 0; i < trail.length; i++) {
+      var s = toScreen(trail[i][0], trail[i][1]);
+      if (i === 0) ctx.moveTo(s[0], s[1]); else ctx.lineTo(s[0], s[1]);
+    }
+    ctx.strokeStyle = 'rgba(47,111,176,0.35)'; ctx.lineWidth = 3; ctx.stroke();
+  }
+
+  function drawRover() {
+    var h = cam.heading;
+    var tip = toScreen(cam.x + Math.cos(h) * 0.55, cam.y + Math.sin(h) * 0.55);
+    var left = toScreen(cam.x + Math.cos(h + 2.5) * 0.4, cam.y + Math.sin(h + 2.5) * 0.4);
+    var right = toScreen(cam.x + Math.cos(h - 2.5) * 0.4, cam.y + Math.sin(h - 2.5) * 0.4);
+    ctx.beginPath();
+    ctx.moveTo(tip[0], tip[1]); ctx.lineTo(left[0], left[1]); ctx.lineTo(right[0], right[1]);
+    ctx.closePath();
+    ctx.fillStyle = '#2f6fb0'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#1c4f82'; ctx.stroke();
+  }
+
+  var dot = document.getElementById('dot'), label = document.getElementById('label');
+  var colours = { driving: '#3aa06e', avoiding: '#d2872a', recovering: '#cf4b3f', paused: '#8b95a1', stopped: '#8b95a1', waiting: '#8b95a1' };
+  var words = { driving: 'Driving', avoiding: 'Avoiding obstacle', recovering: 'Recovering (backing up)', paused: 'Paused', stopped: 'Stopped', waiting: 'Waiting for data' };
+
+  function frame() {
+    cam.x = lerp(cam.x, target.x, 0.2);
+    cam.y = lerp(cam.y, target.y, 0.2);
+    cam.heading = lerpAngle(cam.heading, target.heading, 0.2);
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#f6f8fa'; ctx.fillRect(0, 0, W, H);
+    drawGrid(); drawCone(); drawObstacles(); drawTrail(); drawRover();
+    dot.style.background = colours[behaviour] || '#8b95a1';
+    label.textContent = words[behaviour] || behaviour;
+    requestAnimationFrame(frame);
+  }
+
+  function send(qs) { fetch('/control?' + qs, { cache: 'no-store' }).catch(function () {}); }
+
+  var playBtn = document.getElementById('playBtn');
+  playBtn.onclick = function () {
+    if (paused) { send('action=resume'); playBtn.textContent = 'Pause'; }
+    else { send('action=pause'); playBtn.textContent = 'Resume'; }
+  };
+  document.getElementById('restartBtn').onclick = function () { trail = []; send('action=restart'); };
+  document.getElementById('shuffleBtn').onclick = function () { send('action=shuffle'); };
+  var speed = document.getElementById('speed'), speedOut = document.getElementById('speedOut');
+  speed.oninput = function () { speedOut.textContent = Number(speed.value).toFixed(1); send('speed=' + speed.value); };
+  var density = document.getElementById('density'), densityOut = document.getElementById('densityOut');
+  density.oninput = function () { densityOut.textContent = Number(density.value).toFixed(2); send('density=' + density.value); };
+
+  poll();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
