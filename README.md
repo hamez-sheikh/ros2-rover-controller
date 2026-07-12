@@ -1,3 +1,7 @@
+
+
+https://github.com/user-attachments/assets/7e69dded-a63d-4cf6-b85f-01e3a772facc
+
 # ROS 2 Autonomous Rover Controller
 
 A software-only simulated rover written in Python with ROS 2 Jazzy. A simulated
@@ -18,9 +22,6 @@ endless, procedurally generated obstacle field, steering around obstacles on its
 own while the camera follows it. Every decision is made by the ROS 2 controller
 node; the browser only draws the world and sends the button presses.
 
-<!-- To embed the video: open this README on github.com, click the pencil to
-     edit, delete this comment line, and drag your screen recording onto this
-     spot. GitHub uploads it and turns it into an inline video player. -->
 
 ## Live browser simulation
 
