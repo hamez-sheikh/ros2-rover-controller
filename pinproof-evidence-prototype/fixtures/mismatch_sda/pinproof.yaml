@@ -1,0 +1,23 @@
+# PinProof role contract — "mismatch_sda" fixture.
+# Expected: sensor_sda FAIL (firmware GPIO18 vs schematic pad 23 -> GPIO21),
+# other roles PASS; process exit code 1.
+# Note: no GPIO numbers appear here. Both sides must DERIVE the number:
+#   firmware symbol -> value (from source), net -> module pad -> GPIO (from rulepack).
+pinproof: 1
+
+project:
+  netlist: hardware/controller.xml
+  firmware: firmware
+  mcu_ref: U1
+  module: ESP32-S3-WROOM-1-N8
+
+roles:
+  - role: sensor_sda
+    net: SDA
+    firmware_symbol: PIN_SENSOR_SDA
+  - role: sensor_scl
+    net: SCL
+    firmware_symbol: PIN_SENSOR_SCL
+  - role: status_led
+    net: LED_STATUS
+    firmware_symbol: PIN_STATUS_LED

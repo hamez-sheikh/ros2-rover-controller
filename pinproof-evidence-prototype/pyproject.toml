@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pinproof"
+version = "0.1.0"
+description = "Week 1 evidence prototype: deterministic firmware-to-schematic pin consistency checker (ESP32-S3 + KiCad + PlatformIO)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.0",
+    "pydantic>=2.5",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+pinproof = "pinproof.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pinproof"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

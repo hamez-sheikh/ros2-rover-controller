@@ -1,0 +1,69 @@
+# PinProof rulepack: ESP32-S3-WROOM-1-N8 module pad -> logical GPIO mapping.
+#
+# STATUS: INCOMPLETE / WEEK-1 QUALITY. The full 41-pad table below was
+# transcribed from the official datasheet (provenance below), but only the
+# pads exercised by the fixtures (4, 10, 11, 23) have been double-checked
+# end-to-end through the tool. Verify against the datasheet before trusting
+# a verdict on any other pad. Rulepack errors produce confident-looking
+# verdicts — this file is the single most safety-critical data in the repo.
+rulepack: esp32-s3-wroom-1-n8
+version: 0.1.0
+module: ESP32-S3-WROOM-1-N8
+status: "INCOMPLETE - transcribed from datasheet; only fixture pads (4, 10, 11, 23) end-to-end verified"
+
+provenance:
+  - source: "ESP32-S3-WROOM-1 & ESP32-S3-WROOM-1U Datasheet (Espressif), Section 3 'Pin Definitions', Table 3"
+    version: "v1.2 (2023), cross-checked against v1.6 (2025-07-25); pin table identical in both"
+    url: "https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf"
+    retrieved: "2026-07-15"
+  - note: >
+      N8 variant = 8 MB Quad SPI flash, NO PSRAM. Datasheet Table 3 footnote:
+      on Octal-PSRAM variants (R8/R16V, e.g. N8R8) IO35/IO36/IO37 are consumed
+      by the PSRAM; on the plain N8 they are free GPIOs. GPIO22-25 do not
+      exist on ESP32-S3; GPIO26-34 are not bonded out on any WROOM-1 pad
+      (used for on-module flash).
+
+strapping_gpios: [0, 3, 45, 46]  # datasheet §3.3 / ch.4 "Boot Configurations"
+
+pads:
+  "1":  { name: GND,  gpio: null, kind: power }
+  "2":  { name: 3V3,  gpio: null, kind: power }
+  "3":  { name: EN,   gpio: null, kind: control, note: "chip enable, high = on; do not leave floating" }
+  "4":  { name: IO4,  gpio: 4 }
+  "5":  { name: IO5,  gpio: 5 }
+  "6":  { name: IO6,  gpio: 6 }
+  "7":  { name: IO7,  gpio: 7 }
+  "8":  { name: IO15, gpio: 15 }
+  "9":  { name: IO16, gpio: 16 }
+  "10": { name: IO17, gpio: 17 }
+  "11": { name: IO18, gpio: 18 }
+  "12": { name: IO8,  gpio: 8 }
+  "13": { name: IO19, gpio: 19, note: "USB_D-" }
+  "14": { name: IO20, gpio: 20, note: "USB_D+" }
+  "15": { name: IO3,  gpio: 3,  note: "strapping: JTAG signal source; floating by default" }
+  "16": { name: IO46, gpio: 46, note: "strapping: boot mode / ROM messages; default pull-down" }
+  "17": { name: IO9,  gpio: 9 }
+  "18": { name: IO10, gpio: 10 }
+  "19": { name: IO11, gpio: 11 }
+  "20": { name: IO12, gpio: 12 }
+  "21": { name: IO13, gpio: 13 }
+  "22": { name: IO14, gpio: 14 }
+  "23": { name: IO21, gpio: 21 }
+  "24": { name: IO47, gpio: 47 }
+  "25": { name: IO48, gpio: 48 }
+  "26": { name: IO45, gpio: 45, note: "strapping: VDD_SPI voltage; default pull-down" }
+  "27": { name: IO0,  gpio: 0,  note: "strapping: boot mode; default pull-up" }
+  "28": { name: IO35, gpio: 35, note: "free on N8; consumed by PSRAM on R8/R16V variants" }
+  "29": { name: IO36, gpio: 36, note: "free on N8; consumed by PSRAM on R8/R16V variants" }
+  "30": { name: IO37, gpio: 37, note: "free on N8; consumed by PSRAM on R8/R16V variants" }
+  "31": { name: IO38, gpio: 38 }
+  "32": { name: IO39, gpio: 39 }
+  "33": { name: IO40, gpio: 40 }
+  "34": { name: IO41, gpio: 41 }
+  "35": { name: IO42, gpio: 42 }
+  "36": { name: RXD0, gpio: 44, note: "U0RXD default function" }
+  "37": { name: TXD0, gpio: 43, note: "U0TXD default function" }
+  "38": { name: IO2,  gpio: 2 }
+  "39": { name: IO1,  gpio: 1 }
+  "40": { name: GND,  gpio: null, kind: power }
+  "41": { name: EPAD, gpio: null, kind: power, note: "thermal pad, connect to GND" }
